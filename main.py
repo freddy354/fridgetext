@@ -1,45 +1,35 @@
-"""The 3AM Fridge Text.
+"""The 3AM Fridge Text — one-line make.fun entry.
 
-Writes one exact line to /output/entry.txt (byte-for-byte verified).
+Writes the single entry line to entry.txt with no trailing newline,
+then reads it back and verifies it byte-for-byte.
 """
 
-import hashlib
-import os
-
+# Why it's funny: the fridge has been awake all night listening, it knows
+# the 3am open-stare-close ritual by heart — and unlike you, it has boundaries.
 LINE = "It's 3am. You opened me, stared into the cold for eleven seconds, and closed me. I'm not a mirror. I'm a fridge. Talk to a therapist."
 
-# LINE must be a single line: no newline or carriage return inside it.
-assert "\n" not in LINE and "\r" not in LINE, "LINE must not contain a newline"
+assert "\n" not in LINE and "\r" not in LINE, "LINE must be a single line"
+assert len(LINE) <= 140, f"LINE is {len(LINE)} chars, over the 140 limit"
 
-# Competition gate: the entry line must fit within 140 characters.
-assert len(LINE) <= 140, f"LINE exceeds 140-char limit: {len(LINE)}"
-
-# The line is exactly 133 characters.
-assert len(LINE) == 133, f"LINE must be 133 chars, got {len(LINE)}"
+OUTPUT_PATH = "/output/entry.txt"
+FALLBACK_PATH = "./output/entry.txt"
 
 
 def main() -> None:
-    data = LINE.encode("utf-8")
+    path = OUTPUT_PATH
     try:
-        os.makedirs("/output", exist_ok=True)
-        out_path = "/output/entry.txt"
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write(LINE)
     except OSError:
-        os.makedirs("./output", exist_ok=True)
-        out_path = "./output/entry.txt"
+        path = FALLBACK_PATH
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write(LINE)
 
-    with open(out_path, "w", encoding="utf-8", newline="") as f:
-        f.write(LINE)
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        written = f.read()
 
-    # Read it back and verify byte-for-byte.
-    with open(out_path, "rb") as f:
-        raw = f.read()
-    assert raw == data, "entry.txt does not match LINE byte-for-byte"
-
-    print(
-        f"OK: wrote {len(LINE)} characters "
-        f"({len(data)} bytes, within the 140-char limit) "
-        f"to {out_path} — verified byte-for-byte"
-    )
+    assert written == LINE, "round-trip mismatch: file content differs from LINE"
+    print(f"OK: wrote {len(LINE)} characters (limit 140) to {path}")
 
 
 if __name__ == "__main__":
